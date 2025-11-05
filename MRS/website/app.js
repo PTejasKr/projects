@@ -4,7 +4,8 @@ const state = {
     diceValue: 1,
     movies: [],
     favorites: [],
-    undoStack: [] // store arrays of removed cards for undo
+    undoStack: [], // store arrays of removed cards for undo
+    streaming: {} // cache streaming info by movie id
 };
 
 // DOM Elements
@@ -91,16 +92,19 @@ async function getMovieDetails(movieId) {
             const details = await fetchFromTMDB(`/movie/${movieId}`);
             return {
                 ...details,
-                providers: details.providers || []
+                providers: details.providers || [],
+                streaming_services: details.streaming_services || {}
             };
         }
-        const [details, providers] = await Promise.all([
+        const [details, providers, streaming] = await Promise.all([
             fetchFromTMDB(`/movie/${movieId}`),
-            fetchFromTMDB(`/movie/${movieId}/watch/providers`)
+            fetchFromTMDB(`/movie/${movieId}/watch/providers`),
+        fetch(`${config.apiBase}/movies/${movieId}/streaming`).then(r => r.json())
         ]);
         return {
             ...details,
-            providers: providers.results?.US?.flatrate || []
+            providers: providers.results?.US?.flatrate || [],
+            streaming_services: streaming?.providers || streaming?.providers || {}
         };
     } catch (error) {
         console.error('Error fetching movie details:', error);
@@ -114,23 +118,43 @@ function renderMovieCard(movie, isRecommended = false) {
     card.dataset.movieId = movie.id;
     try{ card.dataset.movieJson = JSON.stringify(movie); }catch(e){}
     
-    const imageUrl = movie.poster_path 
+    const imageUrl = movie.poster_path
         ? `${config.imageBaseUrl}${movie.poster_path}`
         : 'https://via.placeholder.com/500x750?text=No+Poster';
-    
+
+    // Build streaming links: prefer scraped `streaming_services` (providerName -> url),
+    // then TMDB `providers` (array), otherwise fallback to JustWatch search.
+    let streamingHtml = '';
+    if (movie.streaming_services && Object.keys(movie.streaming_services).length) {
+        streamingHtml = Object.entries(movie.streaming_services).map(([name, url]) => `
+            <a href="${url}" target="_blank" rel="noopener">Watch on ${name}</a>
+        `).join('');
+    } else if (movie.providers && movie.providers.length) {
+        streamingHtml = movie.providers.map(p => {
+            const pname = p.provider_name || p.provider || p.name || 'Provider';
+            const link = p.link || (`https://www.justwatch.com/us/search?q=${encodeURIComponent(movie.title)}`);
+            return `
+                <a href="${link}" target="_blank" rel="noopener">Watch on ${pname}</a>
+            `;
+        }).join('');
+    } else if (movie.streaming && movie.streaming.providers) {
+        // support previously cached shape
+        streamingHtml = Object.entries(movie.streaming.providers).map(([name, url]) => `
+            <a href="${url}" target="_blank" rel="noopener">Watch on ${name}</a>
+        `).join('');
+    } else {
+        streamingHtml = `<a href="https://www.justwatch.com/us/search?q=${encodeURIComponent(movie.title)}" target="_blank">Find where to watch</a>`;
+    }
+
     card.innerHTML = `
         <img src="${imageUrl}" alt="${movie.title}">
         <div class="content">
             <h4>${movie.title}</h4>
             <div class="rating">
                 <i class="fas fa-star"></i>
-                <span>${movie.vote_average.toFixed(1)}</span>
+                <span>${(movie.vote_average || 0).toFixed(1)}</span>
             </div>
-            ${movie.providers?.map(p => `
-                <a href="${p.link}" target="_blank" rel="noopener">
-                    Watch on ${p.provider_name}
-                </a>
-            `).join('') || '<a href="https://www.justwatch.com/us/search?q=' + encodeURIComponent(movie.title) + '" target="_blank">Find where to watch</a>'}
+            ${streamingHtml}
         </div>
     `;
     
