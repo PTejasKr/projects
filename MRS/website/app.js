@@ -49,11 +49,31 @@ function setLoading(element, isLoading) {
 }
 
 async function fetchFromTMDB(endpoint, params = {}) {
-    const queryString = new URLSearchParams({
-        api_key: config.tmdbApiKey,
-        ...params
-    }).toString();
-    
+    // If running in local/mock mode, respond from bundled data
+    if (config.useLocal) {
+        // support endpoints we call: /discover/movie, /movie/{id}, /movie/{id}/watch/providers, /movie/{id}/similar
+        if (endpoint.startsWith('/discover/movie')) {
+            // Return a mock paginated response
+            return { results: window.MOCK_MOVIES };
+        }
+        const m = endpoint.match(/^\/movie\/(\d+)/);
+        if (m) {
+            const id = parseInt(m[1], 10);
+            const movie = (window.MOCK_MOVIES || []).find(x => x.id === id);
+            if (!movie) return {};
+            if (endpoint.endsWith('/watch/providers')) {
+                return { results: { US: { flatrate: movie.providers || [] } } };
+            }
+            if (endpoint.endsWith('/similar')) {
+                // naive: return other movies as similar
+                return { results: window.MOCK_MOVIES.filter(x => x.id !== id) };
+            }
+            return movie;
+        }
+        return {};
+    }
+
+    const queryString = new URLSearchParams({ api_key: config.tmdbApiKey, ...params }).toString();
     try {
         const response = await fetch(`${config.tmdbBaseUrl}${endpoint}?${queryString}`);
         if (!response.ok) throw new Error('TMDB API request failed');
@@ -67,6 +87,13 @@ async function fetchFromTMDB(endpoint, params = {}) {
 
 async function getMovieDetails(movieId) {
     try {
+        if (config.useLocal) {
+            const details = await fetchFromTMDB(`/movie/${movieId}`);
+            return {
+                ...details,
+                providers: details.providers || []
+            };
+        }
         const [details, providers] = await Promise.all([
             fetchFromTMDB(`/movie/${movieId}`),
             fetchFromTMDB(`/movie/${movieId}/watch/providers`)
@@ -199,6 +226,17 @@ async function handleSwipeRelease(card, movie, deltaX) {
 
 async function addToFavorites(movie) {
     try {
+        if (config.useLocal) {
+            // persist in localStorage
+            const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+            if (!favs.some(f => f.id === movie.id)) {
+                favs.unshift({ id: movie.id, tmdb_id: movie.id, title: movie.title, poster_path: movie.poster_path });
+                localStorage.setItem('favorites', JSON.stringify(favs));
+            }
+            await loadFavoritesFromServer();
+            showToast(`Added "${movie.title}" to favorites!`);
+            return;
+        }
         const res = await fetch(`${config.apiBase}/favorites`, {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ tmdb_id: movie.id, title: movie.title, poster_path: movie.poster_path, streaming_link: '' })
@@ -215,6 +253,14 @@ async function addToFavorites(movie) {
 
 async function removeFromFavorites(movieId) {
     try {
+        if (config.useLocal) {
+            const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const next = favs.filter(f => f.id !== movieId);
+            localStorage.setItem('favorites', JSON.stringify(next));
+            await loadFavoritesFromServer();
+            showToast('Removed from favorites');
+            return;
+        }
         await fetch(`${config.apiBase}/favorites/${movieId}`, { method: 'DELETE' });
         await loadFavoritesFromServer();
         showToast('Removed from favorites');
@@ -240,6 +286,12 @@ function renderFavorites() {
 
 async function loadFavoritesFromServer() {
     try {
+        if (config.useLocal) {
+            const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+            state.favorites = favs.map(f => ({ id: f.id, tmdb_id: f.tmdb_id || f.id, title: f.title, poster_path: f.poster_path }));
+            renderFavorites();
+            return;
+        }
         const res = await fetch(`${config.apiBase}/favorites`);
         const data = await res.json();
         state.favorites = (data.favorites || []).map(f => ({ id: f.id, tmdb_id: f.tmdb_id, title: f.title, poster_path: f.poster_path }));
