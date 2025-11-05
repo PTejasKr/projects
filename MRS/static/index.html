@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Underrated Reel — Movie Recommender</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Underrated Reel</h1>
+      </header>
+
+      <section class="controls">
+        <div class="dice-area">
+          <button id="rollBtn" class="btn">Roll Dice</button>
+          <div id="diceVal" class="dice">-</div>
+        </div>
+        <div class="genre-area">
+          <label for="genre">Choose genre</label>
+          <select id="genre"></select>
+          <button id="goBtn" class="btn">Recommend</button>
+        </div>
+      </section>
+
+      <main>
+        <div id="recommended" class="recommended">
+          <h2>Recommended</h2>
+          <div id="recCard" class="card rec-card">Roll and choose a genre to start</div>
+        </div>
+
+        <div class="stacked-list">
+          <h3>Movies (swipe cards: right = favorite, left = remove + similar)</h3>
+          <div id="cards" class="cards-row"></div>
+        </div>
+
+        <aside class="favorites">
+          <h3>Favorites</h3>
+          <ul id="favs"></ul>
+        </aside>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
