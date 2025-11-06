@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Underrated Reel - Movie Recommendations</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Underrated Reel</h1>
+            <p class="subtitle">Roll the dice, pick a genre, discover great movies</p>
+        </header>
+
+        <section class="controls">
+            <div class="dice-area">
+                <button id="rollBtn" class="btn">
+                    <i class="fas fa-dice"></i>
+                    Roll Dice
+                </button>
+                <div id="diceVal" class="dice">-</div>
+            </div>
+            <div class="genre-area">
+                <label for="genre">Choose genre</label>
+                <select id="genre">
+                    <option value="28">Action</option>
+                    <option value="35">Comedy</option>
+                    <option value="18">Drama</option>
+                    <option value="53">Thriller</option>
+                    <option value="878">Sci-Fi</option>
+                    <option value="10749">Romance</option>
+                    <option value="27">Horror</option>
+                    <option value="16">Animation</option>
+                </select>
+                <button id="goBtn" class="btn">
+                    <i class="fas fa-magic"></i>
+                    Recommend
+                </button>
+            </div>
+        </section>
+
+        <main>
+            <div id="recommended" class="recommended">
+                <h2>Recommended for You</h2>
+                <div id="recCard" class="card rec-card">
+                    <div class="placeholder">
+                        <i class="fas fa-film"></i>
+                        <p>Roll the dice and choose a genre to start</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stacked-list">
+                <h3>More Movies Like This</h3>
+                <p class="swipe-hint">
+                    <i class="fas fa-arrows-left-right"></i>
+                    Swipe right to favorite, left to remove
+                </p>
+                <div id="cards" class="cards-container">
+                    <div class="cards-row"></div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="favorites">
+            <h3>
+                <i class="fas fa-heart"></i>
+                Favorites
+            </h3>
+            <ul id="favs"></ul>
+        </aside>
+
+        <div id="toast" class="toast"></div>
+    </div>
+
+    <footer>
+        <p>Movie data provided by TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+        <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" 
+             alt="TMDB Logo" class="tmdb-logo">
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
