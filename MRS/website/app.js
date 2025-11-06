@@ -54,8 +54,13 @@ async function fetchFromTMDB(endpoint, params = {}) {
     if (config.useLocal) {
         // support endpoints we call: /discover/movie, /movie/{id}, /movie/{id}/watch/providers, /movie/{id}/similar
         if (endpoint.startsWith('/discover/movie')) {
-            // Return a mock paginated response
-            return { results: window.MOCK_MOVIES };
+            // Filter by genre if specified
+            const genreId = parseInt(params.with_genres, 10);
+            let results = window.MOCK_MOVIES;
+            if (genreId) {
+                results = results.filter(m => m.genre_ids && m.genre_ids.includes(genreId));
+            }
+            return { results };
         }
         const m = endpoint.match(/^\/movie\/(\d+)/);
         if (m) {
@@ -343,6 +348,18 @@ async function recommendMovies() {
     setLoading(elements.cardsContainer, true);
     
     try {
+        // In mock mode with limited data, adjust dice value
+        if (config.useLocal) {
+            const mockMovies = window.MOCK_MOVIES.filter(m => m.genre_ids && m.genre_ids.includes(parseInt(genre, 10)));
+            if (mockMovies.length === 0) {
+                showToast('No movies found for this genre', 'error');
+                return;
+            }
+            // Ensure dice roll maps to available movies
+            state.diceValue = ((state.diceValue - 1) % mockMovies.length) + 1;
+            elements.diceVal.textContent = state.diceValue;
+        }
+
         const response = await fetchFromTMDB('/discover/movie', {
             with_genres: genre,
             sort_by: 'vote_average.desc',
