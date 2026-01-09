@@ -5,11 +5,11 @@
 #define ECHO_PIN 10
 #define TRIG_PIN 11
 
-//ultrasonic sensorrrrr
 //ultrasonic timings
 unsigned long currentMillis;
 unsigned long previousMillis;
 const unsigned long US_PERIOD = 100; //period between readings
+
 //Max distance we want
 const int MAX_DISTANCE = 200;
 int distance;
